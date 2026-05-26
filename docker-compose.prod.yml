@@ -1,0 +1,58 @@
+# ================================================================
+#  docker-compose.prod.yml — Production
+#  Run: docker compose -f docker-compose.prod.yml up -d --build
+# ================================================================
+
+version: "3.9"
+
+services:
+
+  db:
+    image: postgres:15-alpine
+    container_name: scheduler_db
+    restart: always
+    environment:
+      POSTGRES_USER:     ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB:       ${POSTGRES_DB}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/schema_v1.1.sql:/docker-entrypoint-initdb.d/01_schema.sql
+      - ./database/seed_data.sql:/docker-entrypoint-initdb.d/02_seed.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: scheduler_backend
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file: .env
+    environment:
+      POSTGRES_HOST: db
+      DEBUG: "false"
+    expose:
+      - "8000"   # Only accessible internally (via nginx)
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --workers 2
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: scheduler_frontend
+    restart: always
+    depends_on:
+      - backend
+    ports:
+      - "80:80"     # Public HTTP
+    # For HTTPS, add: - "443:443"
+
+volumes:
+  postgres_data:

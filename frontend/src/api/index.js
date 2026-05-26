@@ -1,0 +1,10 @@
+// frontend/src/api/index.js
+export { authApi }       from './auth.api'
+export { departmentsApi } from './departments.api'
+export { classroomsApi }  from './classrooms.api'
+export { coursesApi }     from './courses.api'
+export { instructorsApi } from './instructors.api'
+export { studentsApi }    from './students.api'
+export { sectionsApi }    from './sections.api'
+export { schedulesApi }   from './schedules.api'
+export { aiApi }          from './ai.api'
