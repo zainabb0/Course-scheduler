@@ -11,6 +11,7 @@ import DataTable     from '../components/ui/DataTable'
 import Modal         from '../components/ui/Modal'
 import ConfirmDialog from '../components/ui/ConfirmDialog'
 import useUIStore    from '../store/uiStore'
+import { cn }        from '../lib/utils'
 
 const createSchema = z.object({
   full_name:      z.string().min(2),
@@ -100,14 +101,15 @@ export default function InstructorsPage() {
   const [modal, setModal]       = useState(null)
   const [selected, setSelected] = useState(null)
   const [confirm, setConfirm]   = useState(null)
+  const [deptFilter, setDeptFilter] = useState('')
 
-  const { data: instructors = [], isLoading } = useQuery({
-    queryKey: ['instructors'],
-    queryFn: () => instructorsApi.list().then(r => r.data),
-  })
   const { data: depts = [] } = useQuery({
     queryKey: ['departments'],
     queryFn: () => departmentsApi.list().then(r => r.data),
+  })
+  const { data: instructors = [], isLoading } = useQuery({
+    queryKey: ['instructors', deptFilter],
+    queryFn: () => instructorsApi.list({ department_id: deptFilter || undefined }).then(r => r.data),
   })
 
   const create = useMutation({
@@ -206,6 +208,8 @@ export default function InstructorsPage() {
     )
   }
 
+  const deptLabel = (deptId) => depts.find(d => d.id === deptId)?.name || '—'
+
   const columns = [
     {
       key: 'full_name', label: 'Instructor', sortable: true,
@@ -220,6 +224,10 @@ export default function InstructorsPage() {
           </div>
         </div>
       ),
+    },
+    {
+      key: 'department_id', label: 'Department',
+      render: (row) => <span className="badge badge-blue">{deptLabel(row.department_id)}</span>,
     },
     {
       key: 'max_hours_week', label: 'Max Hrs/Week',
@@ -242,6 +250,22 @@ export default function InstructorsPage() {
         <button className="btn-primary" onClick={() => setModal('create')}>
           <Plus size={16}/> Add Instructor
         </button>
+      </div>
+
+      {/* Department filter */}
+      <div className="flex gap-2 flex-wrap">
+        <button onClick={() => setDeptFilter('')}
+          className={cn('px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors',
+            !deptFilter ? 'bg-primary-600 text-white border-primary-600' : 'bg-white text-gray-600 border-gray-200')}>
+          All Departments
+        </button>
+        {depts.map(d => (
+          <button key={d.id} onClick={() => setDeptFilter(d.id)}
+            className={cn('px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors',
+              deptFilter === d.id ? 'bg-primary-600 text-white border-primary-600' : 'bg-white text-gray-600 border-gray-200')}>
+            {d.name}
+          </button>
+        ))}
       </div>
 
       <DataTable

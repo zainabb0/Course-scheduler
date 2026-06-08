@@ -2,11 +2,12 @@
 import client from './client'
 
 export const studentsApi = {
-  list:   (params) => client.get('/students', { params }),
-  get:    (id)     => client.get(`/students/${id}`),
-  create: (data)   => client.post('/students', data),
-  update: (id, data) => client.put(`/students/${id}`, data),
-  remove: (id)     => client.delete(`/students/${id}`),
+  list:    (params) => client.get('/students', { params }),
+  summary: (params) => client.get('/students/summary', { params }),
+  get:     (id)     => client.get(`/students/${id}`),
+  create:  (data)   => client.post('/students', data),
+  update:  (id, data) => client.put(`/students/${id}`, data),
+  remove:  (id)     => client.delete(`/students/${id}`),
 
   listEnrollments:  (id)       => client.get(`/students/${id}/enrollments`),
   enroll:           (id, data) => client.post(`/students/${id}/enrollments`, data),

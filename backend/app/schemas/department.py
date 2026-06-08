@@ -28,10 +28,12 @@ class StudyYearCreate(BaseModel):
     department_id: str
     year_number: int = Field(..., ge=1, le=6)
     label: str = Field(..., min_length=2, max_length=60)
+    student_count: int = Field(0, ge=0)
 
 
 class StudyYearUpdate(BaseModel):
     label: str | None = Field(None, min_length=2, max_length=60)
+    student_count: int | None = Field(None, ge=0)
 
 
 class StudyYearResponse(BaseModel):
@@ -39,6 +41,7 @@ class StudyYearResponse(BaseModel):
     department_id: str
     year_number: int
     label: str
+    student_count: int
     model_config = {"from_attributes": True}
 
 

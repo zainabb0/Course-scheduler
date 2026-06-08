@@ -75,19 +75,21 @@ export default function ScheduleGrid({
   onDrop,
   canEdit = false,
 }) {
+  const normalizeTime = (time) => time?.toString().slice(0, 5)
+
   // Unique days in order
   const days = [...new Set(slots.map(s => s.day))].sort(
     (a, b) => DAY_ORDER[a] - DAY_ORDER[b]
   )
 
   // Unique slot times (same across all days)
-  const slotTimes = [...new Set(slots.map(s => s.start_time))].sort()
+  const slotTimes = [...new Set(slots.map(s => normalizeTime(s.start_time)))].sort()
 
   // Build lookup: { "sunday_08:00": [entry, ...] }
   const entriesBySlot = {}
   entries.forEach(e => {
     if (!e.day || !e.start_time) return
-    const key = `${e.day}_${e.start_time}`
+    const key = `${e.day}_${normalizeTime(e.start_time)}`
     if (!entriesBySlot[key]) entriesBySlot[key] = []
     entriesBySlot[key].push(e)
   })
@@ -101,7 +103,7 @@ export default function ScheduleGrid({
     if (!over || !active || !onDrop) return
     const entry = active.data.current
     const [day, start] = over.id.split('_')
-    const newSlot = slots.find(s => s.day === day && s.start_time === start)
+    const newSlot = slots.find(s => s.day === day && normalizeTime(s.start_time) === start)
     if (newSlot && entry.id) {
       onDrop(entry.id, newSlot.id, entry.room_id)
     }

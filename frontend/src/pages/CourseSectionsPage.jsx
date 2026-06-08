@@ -38,7 +38,7 @@ export default function CourseSectionsPage() {
   const [modal, setModal]       = useState(null)
   const [confirm, setConfirm]   = useState(null)
   const currentYear = getCurrentAcademicYear()
-  const [yearFilter, setYearFilter] = useState(currentYear)
+  const [yearFilter, setYearFilter] = useState('')
 
   // Fetch all assignments to extract available years dynamically
   const { data: allAssignments = [] } = useQuery({
@@ -55,7 +55,7 @@ export default function CourseSectionsPage() {
 
   const { data: assignments = [], isLoading: loadA } = useQuery({
     queryKey: ['assignments', yearFilter],
-    queryFn: () => sectionsApi.listAssignments({ academic_year: yearFilter }).then(r => r.data),
+    queryFn: () => sectionsApi.listAssignments(yearFilter ? { academic_year: yearFilter } : {}).then(r => r.data),
   })
   const { data: sections = [], isLoading: loadS } = useQuery({
     queryKey: ['sections'],
@@ -211,6 +211,11 @@ export default function CourseSectionsPage() {
           {/* Year filter — dynamic */}
           <div className="flex items-center gap-3 flex-wrap">
             <span className="text-xs text-gray-500 font-medium">Academic Year:</span>
+            <button onClick={() => setYearFilter('')}
+              className={cn('px-3 py-1 rounded-lg text-xs font-medium border',
+                yearFilter === '' ? 'bg-primary-600 text-white border-primary-600' : 'bg-white text-gray-600 border-gray-200')}>
+              All Years
+            </button>
             {availableYears.map(y => (
               <button key={y} onClick={() => setYearFilter(y)}
                 className={cn('px-3 py-1 rounded-lg text-xs font-medium border',

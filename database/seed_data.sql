@@ -27,14 +27,14 @@ INSERT INTO departments (id, name, code) VALUES
 -- ================================================================
 --  2. STUDY YEARS
 -- ================================================================
-INSERT INTO study_years (id, department_id, year_number, label)
-SELECT uuid_generate_v4(), d.id, 1, 'First Year'  FROM departments d WHERE d.code='CE';
-INSERT INTO study_years (id, department_id, year_number, label)
-SELECT uuid_generate_v4(), d.id, 2, 'Second Year' FROM departments d WHERE d.code='CE';
-INSERT INTO study_years (id, department_id, year_number, label)
-SELECT uuid_generate_v4(), d.id, 3, 'Third Year'  FROM departments d WHERE d.code='CE';
-INSERT INTO study_years (id, department_id, year_number, label)
-SELECT uuid_generate_v4(), d.id, 4, 'Fourth Year' FROM departments d WHERE d.code='CE';
+INSERT INTO study_years (id, department_id, year_number, label, student_count)
+SELECT uuid_generate_v4(), d.id, 1, 'First Year', 0  FROM departments d WHERE d.code='CE';
+INSERT INTO study_years (id, department_id, year_number, label, student_count)
+SELECT uuid_generate_v4(), d.id, 2, 'Second Year', 0 FROM departments d WHERE d.code='CE';
+INSERT INTO study_years (id, department_id, year_number, label, student_count)
+SELECT uuid_generate_v4(), d.id, 3, 'Third Year', 0  FROM departments d WHERE d.code='CE';
+INSERT INTO study_years (id, department_id, year_number, label, student_count)
+SELECT uuid_generate_v4(), d.id, 4, 'Fourth Year', 0 FROM departments d WHERE d.code='CE';
 
 -- ================================================================
 --  3. USERS — Admin

@@ -222,8 +222,8 @@ def _flatten_entry(e: ScheduleEntry) -> dict:
         "instructor_name":      instructor.user.full_name
                                 if instructor and instructor.user else None,
         "day":                  ts.day.value         if ts         else None,
-        "start_time":           ts.start_time        if ts         else None,
-        "end_time":             ts.end_time          if ts         else None,
+        "start_time": ts.start_time.strftime("%H:%M") if ts else None,
+        "end_time":   ts.end_time.strftime("%H:%M")   if ts else None,
         "session_type":         assignment.session_type.value
                                 if assignment else None,
     }

@@ -66,5 +66,6 @@ class InstructorResponse(BaseModel):
     title: str | None
     max_hours_week: int
     is_active: bool
+    department_id: str
     preferences: PreferencesResponse | None = None
     model_config = {"from_attributes": True}

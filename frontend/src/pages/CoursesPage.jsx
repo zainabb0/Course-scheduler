@@ -130,14 +130,15 @@ export default function CoursesPage() {
   const [selected, setSelected] = useState(null)
   const [confirm, setConfirm]   = useState(null)
   const [yearFilter, setYearFilter] = useState('')
+  const [deptFilter, setDeptFilter] = useState('')
 
   const { data: depts = [] } = useQuery({
     queryKey: ['departments'],
     queryFn: () => departmentsApi.list().then(r => r.data),
   })
   const { data: courses = [], isLoading } = useQuery({
-    queryKey: ['courses', yearFilter],
-    queryFn: () => coursesApi.list({ study_year_id: yearFilter || undefined }).then(r => r.data),
+    queryKey: ['courses', yearFilter, deptFilter],
+    queryFn: () => coursesApi.list({ study_year_id: yearFilter || undefined, department_id: deptFilter || undefined }).then(r => r.data),
   })
 
   // Flatten all study years for filter bar
@@ -176,8 +177,15 @@ export default function CoursesPage() {
     },
     { key: 'name', label: 'Course Name', sortable: true },
     {
+      key: 'department_id', label: 'Department',
+      render: (row) => {
+        const dept = depts.find(d => d.id === row.department_id)
+        return <span className="badge badge-blue">{dept?.name || '—'}</span>
+      },
+    },
+    {
       key: 'credit_hours', label: 'Credits',
-      render: (row) => <span className="badge badge-blue">{row.credit_hours} cr</span>,
+      render: (row) => <span className="badge badge-gray">{row.credit_hours} cr</span>,
     },
     {
       key: 'features', label: 'Features',
@@ -200,20 +208,43 @@ export default function CoursesPage() {
         </button>
       </div>
 
-      {/* Year filter */}
-      <div className="flex gap-2 flex-wrap">
-        <button onClick={() => setYearFilter('')}
-          className={cn('px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors',
-            !yearFilter ? 'bg-primary-600 text-white border-primary-600' : 'bg-white text-gray-600 border-gray-200 hover:border-primary-300')}>
-          All Years
-        </button>
-        {allYears.map(y => (
-          <button key={y.id} onClick={() => setYearFilter(y.id)}
-            className={cn('px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors',
-              yearFilter === y.id ? 'bg-primary-600 text-white border-primary-600' : 'bg-white text-gray-600 border-gray-200 hover:border-primary-300')}>
-            {y.label}
-          </button>
-        ))}
+      {/* Filters */}
+      <div className="space-y-3">
+        <div>
+          <p className="text-xs font-semibold text-gray-600 mb-2">Department</p>
+          <div className="flex gap-2 flex-wrap">
+            <button onClick={() => setDeptFilter('')}
+              className={cn('px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors',
+                !deptFilter ? 'bg-primary-600 text-white border-primary-600' : 'bg-white text-gray-600 border-gray-200')}>
+              All
+            </button>
+            {depts.map(d => (
+              <button key={d.id} onClick={() => setDeptFilter(d.id)}
+                className={cn('px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors',
+                  deptFilter === d.id ? 'bg-primary-600 text-white border-primary-600' : 'bg-white text-gray-600 border-gray-200')}>
+                {d.name}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div>
+          <p className="text-xs font-semibold text-gray-600 mb-2">Year</p>
+          <div className="flex gap-2 flex-wrap">
+            <button onClick={() => setYearFilter('')}
+              className={cn('px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors',
+                !yearFilter ? 'bg-primary-600 text-white border-primary-600' : 'bg-white text-gray-600 border-gray-200 hover:border-primary-300')}
+            >
+              All Years
+            </button>
+            {allYears.map(y => (
+              <button key={y.id} onClick={() => setYearFilter(y.id)}
+                className={cn('px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors',
+                  yearFilter === y.id ? 'bg-primary-600 text-white border-primary-600' : 'bg-white text-gray-600 border-gray-200 hover:border-primary-300')}>
+                {y.label}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
 
       <DataTable

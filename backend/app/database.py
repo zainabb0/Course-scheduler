@@ -2,6 +2,7 @@
 #  database.py — Async Database Engine & Session
 # ================================================================
 
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
     async_sessionmaker,
@@ -77,6 +78,11 @@ async def create_tables():
     from app.models.base import Base as AppBase
     async with engine.begin() as conn:
         await conn.run_sync(AppBase.metadata.create_all)
+        await conn.execute(
+            text(
+                "ALTER TABLE study_years ADD COLUMN IF NOT EXISTS student_count INTEGER DEFAULT 0"
+            )
+        )
 
 
 async def drop_tables():

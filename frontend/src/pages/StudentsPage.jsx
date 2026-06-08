@@ -30,14 +30,19 @@ export default function StudentsPage() {
   const [selected, setSelected] = useState(null)
   const [confirm, setConfirm]   = useState(null)
   const [yearFilter, setYearFilter] = useState('')
+  const [deptFilter, setDeptFilter] = useState('')
 
   const { data: depts = [] } = useQuery({
     queryKey: ['departments'],
     queryFn: () => departmentsApi.list().then(r => r.data),
   })
   const { data: students = [], isLoading } = useQuery({
-    queryKey: ['students', yearFilter],
-    queryFn: () => studentsApi.list({ study_year_id: yearFilter || undefined }).then(r => r.data),
+    queryKey: ['students', yearFilter, deptFilter],
+    queryFn: () => studentsApi.list({ study_year_id: yearFilter || undefined, department_id: deptFilter || undefined }).then(r => r.data),
+  })
+  const { data: studentSummary = { total: 0, counts: [] } } = useQuery({
+    queryKey: ['students-summary', yearFilter, deptFilter],
+    queryFn: () => studentsApi.summary({ study_year_id: yearFilter || undefined, department_id: deptFilter || undefined }).then(r => r.data),
   })
   const { data: enrollments = [] } = useQuery({
     queryKey: ['enrollments', selected?.id],
@@ -131,6 +136,7 @@ export default function StudentsPage() {
   }
 
   const yearLabel = (yearId) => allYears.find(y => y.id === yearId)?.label || '—'
+  const deptLabel = (deptId) => depts.find(d => d.id === deptId)?.name || '—'
 
   const columns = [
     {
@@ -146,6 +152,10 @@ export default function StudentsPage() {
           </div>
         </div>
       ),
+    },
+    {
+      key: 'department_id', label: 'Department',
+      render: (row) => <span className="badge badge-blue">{deptLabel(row.department_id)}</span>,
     },
     {
       key: 'study_year_id', label: 'Year',
@@ -166,20 +176,66 @@ export default function StudentsPage() {
         </button>
       </div>
 
-      {/* Year filter */}
-      <div className="flex gap-2 flex-wrap">
-        <button onClick={() => setYearFilter('')}
-          className={cn('px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors',
-            !yearFilter ? 'bg-primary-600 text-white border-primary-600' : 'bg-white text-gray-600 border-gray-200')}>
-          All Years
-        </button>
-        {allYears.map(y => (
-          <button key={y.id} onClick={() => setYearFilter(y.id)}
-            className={cn('px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors',
-              yearFilter === y.id ? 'bg-primary-600 text-white border-primary-600' : 'bg-white text-gray-600 border-gray-200')}>
-            {y.label}
-          </button>
-        ))}
+      {/* Filters */}
+      <div className="space-y-3">
+        <div>
+          <p className="text-xs font-semibold text-gray-600 mb-2">Department</p>
+          <div className="flex gap-2 flex-wrap">
+            <button onClick={() => setDeptFilter('')}
+              className={cn('px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors',
+                !deptFilter ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-200')}>
+              All
+            </button>
+            {depts.map(d => (
+              <button key={d.id} onClick={() => setDeptFilter(d.id)}
+                className={cn('px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors',
+                  deptFilter === d.id ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-200')}>
+                {d.name}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div>
+          <p className="text-xs font-semibold text-gray-600 mb-2">Year</p>
+          <div className="flex gap-2 flex-wrap">
+            <button onClick={() => setYearFilter('')}
+              className={cn('px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors',
+                !yearFilter ? 'bg-primary-600 text-white border-primary-600' : 'bg-white text-gray-600 border-gray-200')}>
+              All Years
+            </button>
+            {allYears.map(y => (
+              <button key={y.id} onClick={() => setYearFilter(y.id)}
+                className={cn('px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors',
+                  yearFilter === y.id ? 'bg-primary-600 text-white border-primary-600' : 'bg-white text-gray-600 border-gray-200')}>
+                {y.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <div className="rounded-lg border bg-white p-4">
+          <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Total students</p>
+          <p className="mt-3 text-3xl font-bold text-gray-900">{studentSummary.total}</p>
+        </div>
+        <div className="rounded-lg border bg-white p-4">
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Students by year</p>
+          </div>
+          {studentSummary.counts.length === 0 ? (
+            <p className="text-sm text-gray-500">No students found for this filter.</p>
+          ) : (
+            <div className="space-y-2">
+              {studentSummary.counts.map((item) => (
+                <div key={item.study_year_id} className="flex items-center justify-between text-sm">
+                  <span className="text-gray-700">{item.label}</span>
+                  <span className="font-semibold text-gray-900">{item.student_count}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       <DataTable

@@ -73,6 +73,7 @@ CREATE TABLE study_years (
     department_id   VARCHAR(36)  NOT NULL REFERENCES departments(id) ON DELETE CASCADE,
     year_number     SMALLINT     NOT NULL CHECK (year_number BETWEEN 1 AND 6),
     label           VARCHAR(60)  NOT NULL,
+    student_count   INTEGER      NOT NULL DEFAULT 0,
     is_active       BOOLEAN      NOT NULL DEFAULT TRUE,
     created_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
     updated_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),  -- v1.2

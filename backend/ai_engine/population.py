@@ -13,6 +13,7 @@
 
 import random
 import logging
+import numpy as np
 from copy import deepcopy
 
 from ai_engine.models import ProblemData, ScheduleSlot, SessionData

@@ -8,7 +8,7 @@ uvicorn[standard]==0.30.6
 
 # Database
 sqlalchemy[asyncio]==2.0.35
-asyncpg==0.29.0
+asyncpg==0.30.0
 alembic==1.13.2
 
 # Validation & Serialization
@@ -25,7 +25,7 @@ python-multipart==0.0.12
 python-dotenv==1.0.1
 
 # AI Engine
-# numpy==2.1.1
+ numpy==2.1.1
 
 # Dev & Testing
 pytest==8.3.3

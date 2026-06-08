@@ -18,6 +18,7 @@ const deptSchema = z.object({
 const yearSchema = z.object({
   year_number: z.coerce.number().int().min(1).max(6),
   label: z.string().min(2),
+  student_count: z.coerce.number().int().min(0).default(0),
 })
 
 function DeptForm({ defaultValues, onSubmit, loading }) {
@@ -47,7 +48,7 @@ function DeptForm({ defaultValues, onSubmit, loading }) {
 
 function YearForm({ deptId, onSubmit, loading }) {
   const { register, handleSubmit, formState: { errors } } = useForm({
-    resolver: zodResolver(yearSchema), defaultValues: { year_number: '', label: '' },
+    resolver: zodResolver(yearSchema), defaultValues: { year_number: '', label: '', student_count: 0 },
   })
   return (
     <form onSubmit={handleSubmit((d) => onSubmit(deptId, d))} className="space-y-4">
@@ -61,6 +62,11 @@ function YearForm({ deptId, onSubmit, loading }) {
         <input {...register('label')} className="input" placeholder="First Year" />
         {errors.label && <p className="mt-1 text-xs text-red-500">{errors.label.message}</p>}
       </div>
+      <div>
+        <label className="label">Students</label>
+        <input {...register('student_count')} type="number" min={0} className="input" />
+        {errors.student_count && <p className="mt-1 text-xs text-red-500">{errors.student_count.message}</p>}
+      </div>
       <div className="flex justify-end pt-2">
         <button type="submit" disabled={loading} className="btn-primary">
           {loading ? 'Saving...' : 'Add Year'}
@@ -73,10 +79,11 @@ function YearForm({ deptId, onSubmit, loading }) {
 export default function DepartmentsPage() {
   const qc = useQueryClient()
   const { addToast } = useUIStore()
-  const [modal, setModal]       = useState(null)
-  const [selected, setSelected] = useState(null)
-  const [confirm, setConfirm]   = useState(null)
-  const [expanded, setExpanded] = useState({})
+  const [modal, setModal]         = useState(null)
+  const [selected, setSelected]   = useState(null)
+  const [confirm, setConfirm]     = useState(null)
+  const [confirmYear, setConfirmYear] = useState(null)
+  const [expanded, setExpanded]   = useState({})
 
   const { data: depts = [], isLoading } = useQuery({
     queryKey: ['departments'],
@@ -114,7 +121,7 @@ export default function DepartmentsPage() {
   const addYear = useMutation({
     mutationFn: ({ deptId, data }) => departmentsApi.addYear(deptId, { ...data, department_id: deptId }),
     onSuccess: (_, vars) => {
-      qc.invalidateQueries(['all-study-years'])
+      qc.invalidateQueries({ queryKey: ['all-study-years'], exact: false })
       setModal(null)
       addToast({ type: 'success', message: 'Study year added' })
     },
@@ -122,7 +129,15 @@ export default function DepartmentsPage() {
   })
   const deleteYear = useMutation({
     mutationFn: ({ deptId, yrId }) => departmentsApi.removeYear(deptId, yrId),
-    onSuccess: () => { qc.invalidateQueries(['all-study-years']); addToast({ type: 'success', message: 'Year deleted' }) },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['all-study-years'], exact: false })
+      setConfirmYear(null)
+      addToast({ type: 'success', message: 'Study year deleted' })
+    },
+    onError: (e) => {
+      setConfirmYear(null)
+      addToast({ type: 'error', message: e.response?.data?.detail || 'Error deleting year' })
+    },
   })
 
   const columns = [
@@ -184,15 +199,16 @@ export default function DepartmentsPage() {
           </div>
           <table className="w-full text-xs">
             <thead className="bg-gray-50 border-b">
-              <tr>{['Year #','Label',''].map(h => <th key={h} className="px-4 py-2 text-left font-semibold text-gray-500">{h}</th>)}</tr>
+              <tr>{['Year #','Label','Students',''].map(h => <th key={h} className="px-4 py-2 text-left font-semibold text-gray-500">{h}</th>)}</tr>
             </thead>
             <tbody className="divide-y">
               {(yearsMap[dept.id] || []).map(yr => (
                 <tr key={yr.id} className="hover:bg-gray-50">
                   <td className="px-4 py-2 font-mono font-bold text-blue-700">{yr.year_number}</td>
                   <td className="px-4 py-2 text-gray-700">{yr.label}</td>
+                  <td className="px-4 py-2 text-gray-700">{yr.student_count ?? 0}</td>
                   <td className="px-4 py-2 text-right">
-                    <button onClick={() => deleteYear.mutate({ deptId: dept.id, yrId: yr.id })}
+                    <button onClick={() => setConfirmYear({ deptId: dept.id, yrId: yr.id, label: yr.label })}
                       className="p-1 rounded hover:bg-red-50 text-gray-400 hover:text-red-600">
                       <Trash2 size={12}/>
                     </button>
@@ -200,7 +216,7 @@ export default function DepartmentsPage() {
                 </tr>
               ))}
               {!(yearsMap[dept.id] || []).length && (
-                <tr><td colSpan={3} className="px-4 py-3 text-center text-gray-400">No study years</td></tr>
+                <tr><td colSpan={4} className="px-4 py-3 text-center text-gray-400">No study years</td></tr>
               )}
             </tbody>
           </table>
@@ -226,6 +242,13 @@ export default function DepartmentsPage() {
       <ConfirmDialog open={!!confirm} onClose={() => setConfirm(null)}
         onConfirm={() => deleteDept.mutate(confirm.id)}
         title="Delete Department" message={`Delete "${confirm?.name}"? All related data will be removed.`}
+        danger
+      />
+
+      <ConfirmDialog open={!!confirmYear} onClose={() => setConfirmYear(null)}
+        onConfirm={() => deleteYear.mutate({ deptId: confirmYear?.deptId, yrId: confirmYear?.yrId })}
+        title="Delete Study Year"
+        message={`Delete the study year "${confirmYear?.label}"? This will remove only the year, not the department.`}
         danger
       />
     </div>

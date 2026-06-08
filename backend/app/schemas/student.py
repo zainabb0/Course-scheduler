@@ -32,6 +32,17 @@ class StudentResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class StudentSummaryYear(BaseModel):
+    study_year_id: str
+    label: str
+    student_count: int
+
+
+class StudentSummaryResponse(BaseModel):
+    total: int
+    counts: list[StudentSummaryYear]
+
+
 # ── Enrollment ───────────────────────────────────────────────────
 class EnrollmentCreate(BaseModel):
     student_id: str

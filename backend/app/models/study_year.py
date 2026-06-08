@@ -25,12 +25,24 @@ class StudyYear(Base, TimestampMixin):
     )
     year_number: Mapped[int] = mapped_column(Integer, nullable=False)  # 1-6
     label: Mapped[str] = mapped_column(String(60), nullable=False)     # "First Year"
+    student_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
     # ── Relationships ────────────────────────────────────────────
     department: Mapped["Department"] = relationship(back_populates="study_years")
-    courses: Mapped[list["Course"]] = relationship(back_populates="study_year")
-    sections: Mapped[list["Section"]] = relationship(back_populates="study_year")
-    students: Mapped[list["Student"]] = relationship(back_populates="study_year")
+    courses: Mapped[list["Course"]] = relationship(
+        back_populates="study_year",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+    sections: Mapped[list["Section"]] = relationship(
+        back_populates="study_year",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+    students: Mapped[list["Student"]] = relationship(
+        back_populates="study_year",
+        passive_deletes=True,
+    )
 
     def __repr__(self) -> str:
         return f"<StudyYear {self.label}>"

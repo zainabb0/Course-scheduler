@@ -44,7 +44,11 @@ export default function ScheduleViewPage() {
   const isAdmin = user?.role === 'admin'
 
   // ── Data ─────────────────────────────────────────────────────
-  const { data: schedules = [] } = useQuery({
+  const {
+    data: schedules = [],
+    isError: schedulesError,
+    error: schedulesErrorObj,
+  } = useQuery({
     queryKey: ['schedules'],
     queryFn: () => schedulesApi.list({}).then(r => r.data),
   })
@@ -53,7 +57,12 @@ export default function ScheduleViewPage() {
   const activeSchedule = completedSchedules.find(s => s.id === selectedScheduleId)
     || completedSchedules[0]
 
-  const { data: entries = [], isLoading: loadEntries } = useQuery({
+  const {
+    data: entries = [],
+    isLoading: loadEntries,
+    isError: entriesError,
+    error: entriesErrorObj,
+  } = useQuery({
     queryKey: ['entries', activeSchedule?.id, yearFilter],
     queryFn: () => schedulesApi.getEntries(activeSchedule.id, {
       study_year_id: yearFilter || undefined,
@@ -108,6 +117,16 @@ export default function ScheduleViewPage() {
   const displayEntries = showConflictsOnly
     ? entries.filter(e => e.has_conflict)
     : entries
+
+  if (schedulesError) {
+    return (
+      <div className="card p-10 text-center text-red-500">
+        <CalendarDays size={40} className="mx-auto mb-3 opacity-30"/>
+        <p className="font-semibold">تعذر تحميل الجداول</p>
+        <p className="text-sm mt-1">{schedulesErrorObj?.message || 'حدث خطأ في الاتصال بالخادم'}</p>
+      </div>
+    )
+  }
 
   if (completedSchedules.length === 0) {
     return (
@@ -220,6 +239,12 @@ export default function ScheduleViewPage() {
         {loadEntries ? (
           <div className="h-48 flex items-center justify-center text-gray-400">
             <RefreshCw size={20} className="animate-spin mr-2"/> Loading schedule...
+          </div>
+        ) : entriesError ? (
+          <div className="h-48 flex items-center justify-center text-red-500 flex-col gap-2">
+            <CalendarDays size={32} className="opacity-30"/>
+            <p>خطأ في تحميل البيانات</p>
+            <p className="text-sm">{entriesErrorObj?.message || 'تحقق من الخادم أو اتصال الشبكة'}</p>
           </div>
         ) : displayEntries.length === 0 ? (
           <div className="h-48 flex items-center justify-center text-gray-400 flex-col gap-2">

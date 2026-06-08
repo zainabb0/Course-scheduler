@@ -22,6 +22,7 @@ import logging
 from copy import deepcopy
 from dataclasses import dataclass, field
 from typing import Callable
+import numpy as np
 
 from ai_engine.models import ProblemData, ScheduleSlot
 from ai_engine.population import (
@@ -238,9 +239,9 @@ class GeneticAlgorithm:
             fitnesses = self._evaluate_population(population)
 
             # Track best
-            best_idx  = max(range(len(fitnesses)), key=lambda i: fitnesses[i])
+            best_idx  = int(np.argmax(fitnesses))
             best_fit  = fitnesses[best_idx]
-            avg_fit   = sum(fitnesses) / len(fitnesses)
+            avg_fit   = float(np.mean(fitnesses))
             hard_viol = count_hard_violations(population[best_idx], self.data)
 
             if best_fit > best_ever_fitness:

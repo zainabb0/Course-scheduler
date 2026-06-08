@@ -2,7 +2,7 @@
 import client from './client'
 
 export const instructorsApi = {
-  list:   ()           => client.get('/instructors'),
+  list:   (params)     => client.get('/instructors', { params }),
   get:    (id)         => client.get(`/instructors/${id}`),
   create: (data)       => client.post('/instructors', data),
   update: (id, data)   => client.put(`/instructors/${id}`, data),

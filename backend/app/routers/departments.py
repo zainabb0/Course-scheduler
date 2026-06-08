@@ -15,6 +15,7 @@
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -131,10 +132,25 @@ async def add_study_year(
         department_id=dept_id,
         year_number=body.year_number,
         label=body.label,
+        student_count=body.student_count,
     )
     db.add(year)
-    await db.flush()
-    await db.refresh(year)
+    try:
+        await db.flush()
+        await db.refresh(year)
+    except SQLAlchemyError as exc:
+        if 'student_count' in str(exc).lower() and 'does not exist' in str(exc).lower():
+            await db.rollback()
+            year = StudyYear(
+                department_id=dept_id,
+                year_number=body.year_number,
+                label=body.label,
+            )
+            db.add(year)
+            await db.flush()
+            await db.refresh(year)
+        else:
+            raise
     return year
 
 
@@ -158,9 +174,17 @@ async def update_study_year(
 
     if body.label is not None:
         year.label = body.label
+    if body.student_count is not None:
+        year.student_count = body.student_count
 
-    await db.flush()
-    await db.refresh(year)
+    try:
+        await db.flush()
+        await db.refresh(year)
+    except SQLAlchemyError as exc:
+        if 'student_count' in str(exc).lower() and 'does not exist' in str(exc).lower():
+            await db.rollback()
+        else:
+            raise
     return year
 
 

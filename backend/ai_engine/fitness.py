@@ -14,6 +14,7 @@
 # ================================================================
 
 from dataclasses import dataclass
+import numpy as np
 from ai_engine.models import ProblemData, ScheduleSlot
 from ai_engine.constraints import (
     count_hard_violations,
@@ -83,7 +84,7 @@ def calculate_fitness(
 
     # ── Coverage bonus ───────────────────────────────────────────
     # Reward assigning more sessions (partial schedules score lower)
-    coverage_ratio = len(schedule) / max(len(data.sessions), 1)
+    coverage_ratio = float(np.divide(len(schedule), max(len(data.sessions), 1)))
     coverage_bonus = (1 - coverage_ratio) * weights.hard_violation_penalty * 2
 
     score = 1000.0 - hard_penalty - soft_penalty - coverage_bonus

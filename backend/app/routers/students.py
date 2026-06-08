@@ -13,7 +13,7 @@
 # ================================================================
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -22,10 +22,12 @@ from app.core.security import hash_password
 from app.database import get_db
 from app.models.student import Student
 from app.models.enrollment import StudentEnrollment
+from app.models.section import Section
 from app.models.user import User, UserRole
+from app.models.study_year import StudyYear
 from app.schemas.student import (
     StudentCreate, StudentUpdate, StudentResponse,
-    EnrollmentCreate, EnrollmentResponse,
+    EnrollmentCreate, EnrollmentResponse, StudentSummaryResponse,
 )
 
 router = APIRouter()
@@ -34,15 +36,65 @@ router = APIRouter()
 @router.get("", response_model=list[StudentResponse])
 async def list_students(
     study_year_id: str | None = Query(None),
+    department_id: str | None = Query(None),
     db: AsyncSession = Depends(get_db),
     _admin=Depends(require_admin),
 ):
     q = select(Student).join(User).options(selectinload(Student.user))
     if study_year_id:
         q = q.where(Student.study_year_id == study_year_id)
+    if department_id:
+        q = q.where(User.department_id == department_id)
     q = q.order_by(User.full_name)
     result = await db.execute(q)
     return [_flatten_student(s) for s in result.scalars().all()]
+
+
+@router.get("/summary", response_model=StudentSummaryResponse)
+async def student_summary(
+    study_year_id: str | None = Query(None),
+    department_id: str | None = Query(None),
+    db: AsyncSession = Depends(get_db),
+    _admin=Depends(require_admin),
+):
+    q = (
+        select(
+            StudyYear.id.label('study_year_id'),
+            StudyYear.label,
+            StudyYear.year_number,
+            func.count(Student.id).label('actual_student_count'),
+            StudyYear.student_count.label('fallback_student_count'),
+        )
+        .select_from(StudyYear)
+        .join(Student, StudyYear.id == Student.study_year_id, isouter=True)
+        .join(User, Student.user_id == User.id, isouter=True)
+    )
+    if study_year_id:
+        q = q.where(StudyYear.id == study_year_id)
+    if department_id:
+        q = q.where(StudyYear.department_id == department_id)
+    q = q.group_by(
+        StudyYear.id,
+        StudyYear.label,
+        StudyYear.year_number,
+        StudyYear.student_count,
+    )
+    q = q.order_by(StudyYear.year_number)
+
+    result = await db.execute(q)
+    rows = result.all()
+
+    counts = []
+    for row in rows:
+        student_count = row.actual_student_count or row.fallback_student_count or 0
+        counts.append({
+            'study_year_id': row.study_year_id,
+            'label': row.label,
+            'student_count': student_count,
+        })
+
+    total = sum(item['student_count'] for item in counts)
+    return {'total': total, 'counts': counts}
 
 
 @router.post("", response_model=StudentResponse, status_code=status.HTTP_201_CREATED)
@@ -200,6 +252,7 @@ def _flatten_student(student: Student, user: User | None = None):
         "user_id": student.user_id,
         "full_name": u.full_name,
         "email": u.email,
+        "department_id": u.department_id,
         "study_year_id": student.study_year_id,
         "enrollment_year": student.enrollment_year,
         "is_active": u.is_active,

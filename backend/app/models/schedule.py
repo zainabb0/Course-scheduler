@@ -30,7 +30,7 @@ class Schedule(Base, TimestampMixin):
         String(36), ForeignKey("departments.id", ondelete="CASCADE"), nullable=False
     )
     academic_year: Mapped[str] = mapped_column(String(20), nullable=False)
-    semester: Mapped[int] = mapped_column(Integer, nullable=False)
+    semester: Mapped[str] = mapped_column(String(20), nullable=False)
     name: Mapped[str | None] = mapped_column(String(100), nullable=True)
 
     # Use the existing PostgreSQL enum type "schedule_status"

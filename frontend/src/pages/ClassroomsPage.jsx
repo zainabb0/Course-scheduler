@@ -124,6 +124,8 @@ export default function ClassroomsPage() {
     queryFn: () => departmentsApi.list().then(r => r.data),
   })
 
+  const getDeptName = (deptId) => depts.find(d => d.id === deptId)?.name || '—'
+
   const create = useMutation({
     mutationFn: (data) => classroomsApi.create(data),
     onSuccess: () => { qc.invalidateQueries(['classrooms']); setModal(null); addToast({ type: 'success', message: 'Classroom created' }) },
@@ -161,10 +163,10 @@ export default function ClassroomsPage() {
       render: (row) => <span className="font-mono text-sm">{row.capacity}</span>,
     },
     {
-      key: 'shared', label: 'Shared', sortable: true,
+      key: 'department_id', label: 'Department',
       render: (row) => row.is_shared
         ? <span className="badge bg-yellow-100 text-yellow-700">Shared</span>
-        : <span className="badge badge-gray">Dept</span>,
+        : <span className="badge badge-blue">{getDeptName(row.department_id)}</span>,
     },
     {
       key: 'features', label: 'Features',

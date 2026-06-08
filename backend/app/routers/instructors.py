@@ -13,7 +13,7 @@
 #  PUT    /instructors/{id}/availability         → update a slot (instructor self)
 # ================================================================
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -35,14 +35,20 @@ router = APIRouter()
 # ── Instructor CRUD ──────────────────────────────────────────────
 
 @router.get("", response_model=list[InstructorResponse])
-async def list_instructors(db: AsyncSession = Depends(get_db)):
-    result = await db.execute(
+async def list_instructors(
+    department_id: str | None = Query(None),
+    db: AsyncSession = Depends(get_db)
+):
+    q = (
         select(Instructor)
         .join(User)
         .options(selectinload(Instructor.user), selectinload(Instructor.preferences))
         .where(User.is_active == True)
-        .order_by(User.full_name)
     )
+    if department_id:
+        q = q.where(User.department_id == department_id)
+    q = q.order_by(User.full_name)
+    result = await db.execute(q)
     instructors = result.scalars().all()
     return [_flatten_instructor(i) for i in instructors]
 
@@ -262,6 +268,7 @@ def _flatten_instructor(instructor: Instructor, user: User | None = None):
         "title": instructor.title,
         "max_hours_week": instructor.max_hours_week,
         "is_active": u.is_active,
+        "department_id": u.department_id,
         "preferences": instructor.preferences,
     }
 

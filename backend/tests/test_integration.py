@@ -152,6 +152,51 @@ class TestDepartments:
         assert len(data["study_years"]) == 4
 
     @pytest.mark.asyncio
+    async def test_delete_study_year_with_courses(self, client, admin_token):
+        # Create a temporary department and study year with a course
+        resp = await client.post("/departments", headers=auth(admin_token), json={
+            "name": "Temp Dept", "code": "TEMPDEPT",
+        })
+        assert resp.status_code == 201
+        dept_id = resp.json()["id"]
+
+        resp = await client.post(
+            f"/departments/{dept_id}/study-years",
+            headers=auth(admin_token),
+            json={"year_number": 1, "label": "Year 1", "student_count": 0},
+        )
+        assert resp.status_code == 201
+        year_id = resp.json()["id"]
+
+        resp = await client.post(
+            "/courses",
+            headers=auth(admin_token),
+            json={
+                "name": "Test Course",
+                "code": "TEMP101",
+                "department_id": dept_id,
+                "study_year_id": year_id,
+                "credit_hours": 3,
+                "lecture_hours_week": 2,
+                "lab_hours_week": 0,
+                "has_lab": False,
+                "has_sections": False,
+                "min_capacity": 20,
+            },
+        )
+        assert resp.status_code == 201
+
+        resp = await client.delete(
+            f"/departments/{dept_id}/study-years/{year_id}",
+            headers=auth(admin_token),
+        )
+        assert resp.status_code == 204
+
+        # Cleanup department
+        resp = await client.delete(f"/departments/{dept_id}", headers=auth(admin_token))
+        assert resp.status_code == 204
+
+    @pytest.mark.asyncio
     async def test_create_and_delete_department(self, client, admin_token):
         # Create
         resp = await client.post("/departments", headers=auth(admin_token), json={
@@ -287,6 +332,35 @@ class TestInstructors:
 # ================================================================
 #  COURSE SECTIONS TESTS
 # ================================================================
+
+class TestStudents:
+    @pytest.mark.asyncio
+    async def test_student_summary_uses_study_year_count_when_no_students(self, client, admin_token):
+        # Create a temporary department and study year with a student count estimate
+        resp = await client.post("/departments", headers=auth(admin_token), json={
+            "name": "Temp Student Dept", "code": "TEMPSTUD",
+        })
+        assert resp.status_code == 201
+        dept_id = resp.json()["id"]
+
+        resp = await client.post(
+            f"/departments/{dept_id}/study-years",
+            headers=auth(admin_token),
+            json={"year_number": 1, "label": "Year 1", "student_count": 13},
+        )
+        assert resp.status_code == 201
+        year_id = resp.json()["id"]
+
+        resp = await client.get(f"/students/summary?study_year_id={year_id}", headers=auth(admin_token))
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["total"] == 13
+        assert data["counts"][0]["student_count"] == 13
+
+        # Cleanup department and associated study years
+        resp = await client.delete(f"/departments/{dept_id}", headers=auth(admin_token))
+        assert resp.status_code == 204
+
 
 class TestCourseSections:
     @pytest.mark.asyncio
